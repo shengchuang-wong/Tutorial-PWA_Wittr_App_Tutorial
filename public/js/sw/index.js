@@ -34,10 +34,12 @@
 //   )ic
 // })
 
+const staticCacheName = 'wittr-static-v2'
+
 self.addEventListener('install', (event) => {
 
   event.waitUntil(
-    caches.open('wittr-static-v1').then((cache) => {
+    caches.open(staticCacheName).then((cache) => {
       return cache.addAll([
         '/',
         'js/main.js',
@@ -48,13 +50,31 @@ self.addEventListener('install', (event) => {
       ]);
     })
   )
+})
 
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.filter(cacheName => {
+          
+          return cacheName.startsWith('wittr-') && cacheName != staticCacheName
+        }).map(cacheName => {
+          console.log({
+            cacheName
+          })
+          return caches.delete(cacheName)
+        })
+      )
+
+    })
+  )
 })
 
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then(response => {
-      if(response) return response
+      if (response) return response
       return fetch(event.request)
     })
   )
