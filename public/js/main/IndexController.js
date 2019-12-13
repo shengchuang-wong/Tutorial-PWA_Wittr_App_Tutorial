@@ -11,12 +11,64 @@ export default function IndexController(container) {
   this._registerServiceWorker();
 }
 
-IndexController.prototype._registerServiceWorker = () => {
+IndexController.prototype._registerServiceWorker = function() {
+
   if(!navigator.serviceWorker) return
-  navigator.serviceWorker.register('/sw.js').then(() => {
-    console.log('Registration worked!')
+
+  navigator.serviceWorker.register('/sw.js').then((reg) => {
+    console.log('registered')
+
+    if(!navigator.serviceWorker.controller) {
+      console.log('none')
+      return
+    }
+
+    if(reg.waiting) {
+      console.log('waiting')
+      this._updateReady(reg.waiting)
+      return
+    }
+
+    if(reg.installing) {
+      console.log('installing')
+      this._trackInstalling(reg.installing)
+      return
+    }
+
+    reg.addEventListener('updatefound', () => {
+      console.log('updatefound')
+      this._trackInstalling(reg.installing)
+    })
+
   }).catch(() => {
     console.log('Registration failed!')
+  })
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload()
+  })
+}
+
+IndexController.prototype._trackInstalling = function(worker) {
+  console.log('tracking')
+  const indexController = this
+  worker.addEventListener('statechange', function() {
+    console.log('statechange')
+    if(worker.state === 'installed') {
+      console.log('statechange installed')
+      indexController._updateReady(worker)
+    }
+  })
+}
+
+IndexController.prototype._updateReady = function(worker) {
+  const toast = this._toastsView.show('New version available', {
+    buttons: ['refresh', 'dismiss']
+  })
+
+  toast.answer.then(answer => {
+    if(answer != 'refresh') return
+    worker.postMessage({ action: 'skipWaiting' })
   })
 }
 
