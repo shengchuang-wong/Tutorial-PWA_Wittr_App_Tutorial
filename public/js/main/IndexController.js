@@ -3,6 +3,7 @@ import ToastsView from './views/Toasts';
 import idb from 'idb';
 import { contentImgsCache } from '../sw/index'
 
+// open database
 const openDatabase = () => {
   if (!navigator.serviceWorker) return Promise.resolve()
 
@@ -17,6 +18,7 @@ const openDatabase = () => {
   })
 }
 
+// initiaialize
 export default function IndexController(container) {
   this._container = container;
   this._postsView = new PostsView(this._container);
@@ -49,18 +51,21 @@ IndexController.prototype._registerServiceWorker = function () {
       return
     }
 
+    // waiting for new update to be triggerred
     if (reg.waiting) {
       console.log('waiting')
       this._updateReady(reg.waiting)
       return
     }
 
+    // when installing new version
     if (reg.installing) {
       console.log('installing')
       this._trackInstalling(reg.installing)
       return
     }
 
+    // when there is a new update
     reg.addEventListener('updatefound', () => {
       console.log('updatefound')
       this._trackInstalling(reg.installing)
@@ -70,6 +75,7 @@ IndexController.prototype._registerServiceWorker = function () {
     console.log('Registration failed!')
   })
 
+  // when new updated is applied
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     window.location.reload()
   })
@@ -87,6 +93,7 @@ IndexController.prototype._trackInstalling = function (worker) {
   })
 }
 
+// when update ready, post message to service worker
 IndexController.prototype._updateReady = function (worker) {
   const toast = this._toastsView.show('New version available', {
     buttons: ['refresh', 'dismiss']
@@ -143,6 +150,7 @@ IndexController.prototype._openSocket = function () {
   });
 };
 
+// serve cahce data
 IndexController.prototype._showCachedMessages = function () {
   var indexController = this
 
@@ -157,6 +165,7 @@ IndexController.prototype._showCachedMessages = function () {
   })
 }
 
+// clean cache image
 IndexController.prototype._cleanImageCache = function () {
   return this._dbPromise.then(function (db) {
     if (!db) return

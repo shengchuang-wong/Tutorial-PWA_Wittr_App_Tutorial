@@ -34,6 +34,7 @@
 //   )ic
 // })
 
+// cache name
 const staticCacheName = 'wittr-static-v15'
 export const contentImgsCache = 'wittr-content-imgs'
 const allCaches = [
@@ -41,6 +42,7 @@ const allCaches = [
   contentImgsCache
 ]
 
+// on service worker install, version based
 self.addEventListener('install', (event) => {
 
   event.waitUntil(
@@ -57,6 +59,7 @@ self.addEventListener('install', (event) => {
   )
 })
 
+// when service worker is activated
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -76,9 +79,11 @@ self.addEventListener('activate', (event) => {
   )
 })
 
+// when fetch network happen
 self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url)
 
+  // serve cache data
   if(requestUrl.origin === location.origin) {
     if(requestUrl.pathname === '/') {
       event.respondWith(caches.match('/skeleton'))
@@ -133,6 +138,7 @@ const servePhoto = (request) => {
   })
 }
 
+// when there is a message to service worker
 self.addEventListener('message', (event) => {
   if(event.data.action === 'skipWaiting') {
     self.skipWaiting()
