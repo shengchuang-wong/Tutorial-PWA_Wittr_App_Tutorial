@@ -34,7 +34,13 @@
 //   )ic
 // })
 
-const staticCacheName = 'wittr-static-v10'
+const staticCacheName = 'wittr-static-v15'
+export const contentImgsCache = 'wittr-content-imgs'
+const allCaches = [
+  staticCacheName,
+  contentImgsCache
+]
+
 self.addEventListener('install', (event) => {
 
   event.waitUntil(
@@ -57,7 +63,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.filter(cacheName => {
           
-          return cacheName.startsWith('wittr-') && cacheName != staticCacheName
+          return cacheName.startsWith('wittr-') && !allCaches.includes(cacheName)
         }).map(cacheName => {
           console.log({
             cacheName
@@ -78,6 +84,15 @@ self.addEventListener('fetch', (event) => {
       event.respondWith(caches.match('/skeleton'))
       return
     }
+    console.log(requestUrl.pathname)
+    if(requestUrl.pathname.startsWith('/photos/')) {
+      event.respondWith(servePhoto(event.request))
+      return
+    }
+    if(requestUrl.pathname.startsWith('/avatars/')) {
+      event.respondWith(serveAvatar(event.request))
+      return
+    }
   }
 
   event.respondWith(
@@ -87,6 +102,36 @@ self.addEventListener('fetch', (event) => {
     })
   )
 })
+
+const serveAvatar = request => {
+  const storageUrl = request.url.replace(/-\dx\.jpg$/, '')
+
+  return caches.open(contentImgsCache).then(cache => {
+    return cache.match(storageUrl).then(response => {
+      if (response) return response
+
+      return fetch(request).then(networkResponse => {
+        cache.put(storageUrl, networkResponse.clone())
+        return networkResponse
+      })
+    })
+  })
+}
+
+const servePhoto = (request) => {
+  const storageUrl = request.url.replace(/-\d+px\.jpg$/, '')
+
+  return caches.open(contentImgsCache).then(cache => {
+    return cache.match(storageUrl).then(response => {
+      if (response) return response
+
+      return fetch(request).then(networkResponse => {
+        cache.put(storageUrl, networkResponse.clone())
+        return networkResponse
+      })
+    })
+  })
+}
 
 self.addEventListener('message', (event) => {
   if(event.data.action === 'skipWaiting') {
